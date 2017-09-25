@@ -89,6 +89,16 @@ import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
 
+import ApolloClient, { HttpLink } from 'apollo-client-preset';
+
+const client = new ApolloClient({
+  link: new HttpLink({
+    uri: 'https://www.teacherspayteachers.com/graph/graphql',
+  }),
+});
+
+
+
 import gql from 'graphql-tag';
 // GraphQL query
 const productsQuery = gql`
@@ -98,6 +108,8 @@ const productsQuery = gql`
     }
   }
 `;
+
+// client.query({ query: productsQuery })
 
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
@@ -133,23 +145,6 @@ export default {
       architectureConnections: ARCHITECTURE_CONNECTIONS,
       architectureDiagramPaths: []
     }
-  },
-  apollo: {
-    // Local state 'products' data will be updated
-    // by the GraphQL query result
-    products: {
-      // GraphQL query
-      query: productsQuery,
-      variables() {
-        return{
-          ids: this.ids
-        };
-      }
-      // Will update the 'loading' attribute
-      // +1 when a new query is loading
-      // -1 when a query is completed
-      loadingKey: 'loading',
-    },
   },
   watch: {
     imageURLSelect: function(value) {
@@ -242,7 +237,6 @@ export default {
       }
 
       const newImage = `http://localhost:8080/${url}`
-      console.log("newImage = %j", newImage);
 
       this.imageLoading = true
       loadImage(
