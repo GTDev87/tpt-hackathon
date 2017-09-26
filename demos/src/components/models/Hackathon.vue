@@ -89,6 +89,28 @@ import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
 
+import ApolloClient, { HttpLink } from 'apollo-client-preset';
+
+const client = new ApolloClient({
+  link: new HttpLink({
+    uri: 'https://www.teacherspayteachers.com/graph/graphql',
+  }),
+});
+
+
+
+import gql from 'graphql-tag';
+// GraphQL query
+const productsQuery = gql`
+  query ProductsQuery($ids: [ID]) {
+    products(ids: $ids) {
+      id
+    }
+  }
+`;
+
+// client.query({ query: productsQuery })
+
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
   weights: '/demos/data/squeezenet_v1.1/squeezenet_v1.1_weights.buf',
@@ -124,7 +146,6 @@ export default {
       architectureDiagramPaths: []
     }
   },
-
   watch: {
     imageURLSelect: function(value) {
       this.imageURLInput = value
@@ -215,8 +236,7 @@ export default {
         return
       }
 
-      const newImage = `http://localhost:8080/${url}`
-      console.log("newImage = %j", newImage);
+      const newImage = `http://174.138.46.151:19884/${url}`
 
       this.imageLoading = true
       loadImage(
