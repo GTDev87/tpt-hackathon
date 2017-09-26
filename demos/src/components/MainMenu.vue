@@ -48,6 +48,12 @@
           <span class="menu-item-subheading">Hackathon</span>
         </a>
       </li>
+      <li :class="{ active: currentView === 'hackathon-search' }">
+        <a href="#/hackathon-search">
+          <span class="menu-item-heading">Hackathon Search</span>
+          <span class="menu-item-subheading">Hackathon</span>
+        </a>
+      </li>
       <li :class="{ active: currentView === 'imdb-bidirectional-lstm' }">
         <a href="#/imdb-bidirectional-lstm">
           <span class="menu-item-heading">Bidirectional LSTM</span>
