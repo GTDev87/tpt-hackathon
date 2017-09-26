@@ -89,27 +89,21 @@ import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
 
-import ApolloClient, { HttpLink } from 'apollo-client-preset';
+import * as firebase from 'firebase';
 
-const client = new ApolloClient({
-  link: new HttpLink({
-    uri: 'https://www.teacherspayteachers.com/graph/graphql',
-  }),
+var config = {
+  apiKey: "AIzaSyCLb6XCoyyxmaBcRcGZS95PbPmDv00x-1w",
+  authDomain: "hotdog-b8844.firebaseapp.com",
+  databaseURL: "https://hotdog-b8844.firebaseio.com/",
+  storageBucket: "hotdog-b8844.appspot.com"
+};
+
+const firebaseApp  = firebase.initializeApp(config);
+const productDB = firebaseApp.database().ref("products")
+
+productDB.on('value', (snapshot) => {
+  console.log("snapshot.val() - %j", snapshot.val());
 });
-
-
-
-import gql from 'graphql-tag';
-// GraphQL query
-const productsQuery = gql`
-  query ProductsQuery($ids: [ID]) {
-    products(ids: $ids) {
-      id
-    }
-  }
-`;
-
-// client.query({ query: productsQuery })
 
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
@@ -235,7 +229,6 @@ export default {
         this.clearAll()
         return
       }
-
       const newImage = `http://174.138.46.151:19884/${url}`
 
       this.imageLoading = true

@@ -37,11 +37,11 @@
   "homepage": "https://github.com/transcranial/keras-js#readme",
   "dependencies": {
     "apollo-client": "^1.9.3",
-    "apollo-client-preset": "^0.1.0-1",
     "axios": "^0.16.1",
     "babel-polyfill": "^6.23.0",
     "bluebird": "^3.5.0",
     "cwise": "^1.0.10",
+    "firebase": "^4.4.0",
     "lodash": "^4.17.4",
     "ndarray": "^1.0.18",
     "ndarray-blas-level2": "^1.1.0",

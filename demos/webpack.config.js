@@ -7,8 +7,8 @@ const config = {
   output: { path: path.resolve(__dirname, 'dist'), filename: 'bundle.js' },
   module: {
     rules: [
-      { enforce: 'pre', test: /\.vue$/, loader: 'eslint-loader', exclude: /node_modules/ },
-      { enforce: 'pre', test: /\.js$/, loader: 'eslint-loader', exclude: /node_modules/ },
+      // { enforce: 'pre', test: /\.vue$/, loader: 'eslint-loader', exclude: /node_modules/ },
+      // { enforce: 'pre', test: /\.js$/, loader: 'eslint-loader', exclude: /node_modules/ },
       { test: /\.vue$/, loader: 'vue-loader', exclude: /node_modules/ },
       { test: /\.js$/, loader: 'babel-loader', exclude: /node_modules/ },
       { test: /\.(glsl|frag|vert)$/, use: ['raw-loader', 'glslify-loader'], exclude: /node_modules/ }
