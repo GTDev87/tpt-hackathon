@@ -84,16 +84,29 @@
 import loadImage from 'blueimp-load-image'
 import ndarray from 'ndarray'
 import ops from 'ndarray-ops'
-import filter from 'lodash/filter'
+import { values, filter, toPairs, fromPairs, repeat, fill, max } from 'lodash'
 import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
 
 import ProductDB from '../../firebase/ProductDB';
 
-ProductDB.on('value', (snapshot) => {
-  console.log("snapshot.val() - %j", snapshot.val());
-});
+import { imagenetClasses } from '../../utils/imagenet';
+
+import createKDTree from 'static-kdtree';
+
+const nameToId = fromPairs(toPairs(imagenetClasses).map((pair) => [pair[1][1].toLowerCase(), pair[0]]));
+const hightestVal = max(values(nameToId).map((id) => +id));
+
+const zeroes = (numZeros) => fill(Array(numZeros), 0);
+
+const createDimensionalFeatureArray = (featureMap) => {
+  const fArray = zeroes(hightestVal + 1);
+  toPairs(featureMap).map(([name, attribution]) => {
+    fArray[nameToId[name]] = attribution;
+  });
+  return fArray
+}
 
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
@@ -166,7 +179,13 @@ export default {
         }
         return empty
       }
-      return utils.imagenetClassesTopK(this.output, 5)
+
+      const topK = utils.imagenetClassesTopK(this.output, 5)
+
+      console.log("topK = %j", topK);
+      // this.tree
+
+      return topK;
     }
   },
 
@@ -181,34 +200,61 @@ export default {
 
   methods: {
     drawArchitectureDiagramPaths: function() {
-      this.architectureDiagramPaths = []
-      this.architectureConnections.forEach(conn => {
-        const containerElem = document.getElementsByClassName('architecture-container')[0]
-        const fromElem = document.getElementById(conn.from)
-        const toElem = document.getElementById(conn.to)
-        const containerElemCoords = containerElem.getBoundingClientRect()
-        const fromElemCoords = fromElem.getBoundingClientRect()
-        const toElemCoords = toElem.getBoundingClientRect()
-        const xContainer = containerElemCoords.left
-        const yContainer = containerElemCoords.top
-        const xFrom = fromElemCoords.left + fromElemCoords.width / 2 - xContainer
-        const yFrom = fromElemCoords.top + fromElemCoords.height / 2 - yContainer
-        const xTo = toElemCoords.left + toElemCoords.width / 2 - xContainer
-        const yTo = toElemCoords.top + toElemCoords.height / 2 - yContainer
+      console.log("drawArchitectureDiagramPaths called")
+      let searchData = null
+      ProductDB.on('value', (snapshot) => {
+        // this is a hack
+        if(searchData !== null) { return; }
+        
+        // also a hack
+        this.searchData = filter(values(snapshot.val()), ({id}) => typeof id === "string");
 
-        let path = `M${xFrom},${yFrom} L${xTo},${yTo}`
-        if (conn.corner === 'top-right') {
-          path = `M${xFrom},${yFrom} L${xTo - 10},${yFrom} Q${xTo},${yFrom} ${xTo},${yFrom + 10} L${xTo},${yTo}`
-        } else if (conn.corner === 'bottom-left') {
-          path = `M${xFrom},${yFrom} L${xFrom},${yTo - 10} Q${xFrom},${yTo} ${xFrom + 10},${yTo} L${xTo},${yTo}`
-        } else if (conn.corner === 'top-left') {
-          path = `M${xFrom},${yFrom} L${xTo + 10},${yFrom} Q${xTo},${yFrom} ${xTo},${yFrom + 10} L${xTo},${yTo}`
-        } else if (conn.corner === 'bottom-right') {
-          path = `M${xFrom},${yFrom} L${xFrom},${yTo - 10} Q${xFrom},${yTo} ${xFrom - 10},${yTo} L${xTo},${yTo}`
-        }
 
-        this.architectureDiagramPaths.push(path)
-      })
+        const fullFeatureData = 
+          this.searchData.map(({id, thumbnails}) => {
+            //only a single thumbnail
+            const [thumbnail] = thumbnails;
+            return [id, createDimensionalFeatureArray(thumbnail)]
+          })
+
+        const fullFeatureArray =
+          fullFeatureData.map(([, data]) => data);
+
+        this.tree = createKDTree(fullFeatureArray)
+
+
+        console.log("fullFeatureData - %j", fullFeatureData);
+
+        this.architectureDiagramPaths = []
+        this.architectureConnections.forEach(conn => {
+          const containerElem = document.getElementsByClassName('architecture-container')[0]
+          const fromElem = document.getElementById(conn.from)
+          const toElem = document.getElementById(conn.to)
+          const containerElemCoords = containerElem.getBoundingClientRect()
+          const fromElemCoords = fromElem.getBoundingClientRect()
+          const toElemCoords = toElem.getBoundingClientRect()
+          const xContainer = containerElemCoords.left
+          const yContainer = containerElemCoords.top
+          const xFrom = fromElemCoords.left + fromElemCoords.width / 2 - xContainer
+          const yFrom = fromElemCoords.top + fromElemCoords.height / 2 - yContainer
+          const xTo = toElemCoords.left + toElemCoords.width / 2 - xContainer
+          const yTo = toElemCoords.top + toElemCoords.height / 2 - yContainer
+
+          let path = `M${xFrom},${yFrom} L${xTo},${yTo}`
+          if (conn.corner === 'top-right') {
+            path = `M${xFrom},${yFrom} L${xTo - 10},${yFrom} Q${xTo},${yFrom} ${xTo},${yFrom + 10} L${xTo},${yTo}`
+          } else if (conn.corner === 'bottom-left') {
+            path = `M${xFrom},${yFrom} L${xFrom},${yTo - 10} Q${xFrom},${yTo} ${xFrom + 10},${yTo} L${xTo},${yTo}`
+          } else if (conn.corner === 'top-left') {
+            path = `M${xFrom},${yFrom} L${xTo + 10},${yFrom} Q${xTo},${yFrom} ${xTo},${yFrom + 10} L${xTo},${yTo}`
+          } else if (conn.corner === 'bottom-right') {
+            path = `M${xFrom},${yFrom} L${xFrom},${yTo - 10} Q${xFrom},${yTo} ${xFrom - 10},${yTo} L${xTo},${yTo}`
+          }
+
+          this.architectureDiagramPaths.push(path)
+        })
+      });
+      
     },
     onImageURLInputEnter: function(e) {
       this.imageURLSelect = null

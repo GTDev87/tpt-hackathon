@@ -52,6 +52,7 @@
     "ndarray-tile": "^1.0.3",
     "ndarray-unpack": "^1.0.0",
     "ndarray-unsqueeze": "^1.0.3",
+    "static-kdtree": "^1.0.1",
     "vue-apollo": "^2.1.0-rc.5",
     "weblas": "^0.9.1"
   },
