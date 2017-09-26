@@ -89,6 +89,12 @@ import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
 
+import ProductDB from '../../firebase/ProductDB';
+
+ProductDB.on('value', (snapshot) => {
+  console.log("snapshot.val() - %j", snapshot.val());
+});
+
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
   weights: '/demos/data/squeezenet_v1.1/squeezenet_v1.1_weights.buf',

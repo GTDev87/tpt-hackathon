@@ -8,6 +8,7 @@ import Resnet50 from '../components/models/Resnet50'
 import InceptionV3 from '../components/models/InceptionV3'
 import SqueezenetV1 from '../components/models/SqueezenetV1'
 import Hackathon from '../components/models/Hackathon'
+import HackathonSearch from '../components/models/HackathonSearch'
 import ImdbBidirectionalLstm from '../components/models/ImdbBidirectionalLstm'
 
 Vue.use(VueRouter)
@@ -22,6 +23,7 @@ const router = new VueRouter({
     { path: '/inception-v3', component: InceptionV3 },
     { path: '/squeezenet-v1.1', component: SqueezenetV1 },
     { path: '/hackathon', component: Hackathon },
+    { path: '/hackathon-search', component: HackathonSearch },
     { path: '/imdb-bidirectional-lstm', component: ImdbBidirectionalLstm }
   ]
 })
