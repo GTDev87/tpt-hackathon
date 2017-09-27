@@ -103,7 +103,7 @@
 import loadImage from 'blueimp-load-image'
 import ndarray from 'ndarray'
 import ops from 'ndarray-ops'
-import { values, filter, toPairs, fromPairs, repeat, fill, max, keyBy } from 'lodash'
+import { values, filter, toPairs, fromPairs, repeat, fill, max, keyBy, sortBy } from 'lodash'
 import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
@@ -217,8 +217,11 @@ export default {
       const results = resultsIds.map((id) => ({
         id: id,
         img: this.itemDataById[`${id}`].thumb_urls[0],
-        features: toPairs(this.itemDataById[`${id}`].thumbnails[0])
-          .map(([name, probability]) => ({name, probability})),
+        features: 
+          sortBy(
+            toPairs(this.itemDataById[`${id}`].thumbnails[0])
+              .map(([name, probability]) => ({name, probability})),
+            [(o) => -o.probability]),
 
       }))
       return {currentImg: topK, results};
