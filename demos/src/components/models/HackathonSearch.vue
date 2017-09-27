@@ -1,7 +1,7 @@
 <template>
   <div class="demo squeezenet-v1">
     <div class="title">
-      <span>SqueezeNet v1.1, trained on ImageNet</span>
+      <span>SqueezeNet v1.1, trained on ImageNet Using {{ searchResultNumber }} TpT Images</span>
     </div>
     <mdl-spinner v-if="modelLoading && loadingProgress < 100"></mdl-spinner>
     <div class="loading-progress" v-if="modelLoading && loadingProgress < 100">
@@ -56,10 +56,22 @@
           </div>
         </div>
         <div v-if="!!outputClasses.results">
-          <div class="output-class" v-for="i in [0, 1, 2, 3, 4]">
+          <div class="output-class search-result" style="display: flex;" v-for="i in [0, 1, 2, 3, 4]">
             <a target="_blank" :href="`https://www.teacherspayteachers.com/Product/${outputClasses.results[i].id}`" class="output-label">
               <img :src="outputClasses.results[i].img"></img>
             </a>
+            <div class="output">
+              <div class="output-class"
+                :class="{ predicted: j === 0 && outputClasses.results[i].features[j].probability.toFixed(2) > 0 }"
+                v-for="j in [0, 1, 2, 3, 4]"
+              >
+                <div class="output-label">{{ outputClasses.results[i].features[j].name }}</div>
+                <div class="output-bar"
+                  :style="{width: `${Math.round(100 * outputClasses.results[i].features[j].probability)}px`, background: `rgba(27, 188, 155, ${outputClasses.results[i].features[j].probability.toFixed(2)})` }"
+                ></div>
+                <div class="output-value">{{ Math.round(100 * outputClasses.results[i].features[j].probability) }}%</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -202,7 +214,13 @@ export default {
         this.tree.knn(newFeaturesArray, closestProductsNum)
         .map((idx) => this.indexToIdMap[idx])
 
-      const results = resultsIds.map((id) => ({id: id, img: this.itemDataById[`${id}`].thumb_urls[0]}))
+      const results = resultsIds.map((id) => ({
+        id: id,
+        img: this.itemDataById[`${id}`].thumb_urls[0],
+        features: toPairs(this.itemDataById[`${id}`].thumbnails[0])
+          .map(([name, probability]) => ({name, probability})),
+
+      }))
       return {currentImg: topK, results};
     }
   },
@@ -225,6 +243,7 @@ export default {
         
         // also a hack
         this.searchData = filter(values(snapshot.val()), ({id}) => typeof id === "string");
+        this.searchResultNumber = this.searchData.length;
         this.itemDataById = keyBy(this.searchData, "id");
 
         const fullFeatureData = 
@@ -450,12 +469,18 @@ export default {
         align-items: flex-start;
         justify-content: center;
 
+        
+
         & .output-class {
           display: flex;
           flex-direction: row;
           align-items: center;
           justify-content: center;
           padding: 6px 0;
+
+          &.search-result {
+            display: flex;
+          }
 
           & .output-label {
             text-align: right;
