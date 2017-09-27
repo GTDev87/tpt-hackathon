@@ -108,6 +108,9 @@ const createDimensionalFeatureArray = (featureMap) => {
   return fArray
 }
 
+const featureTuplesToIndexIdMap = (tuples) =>
+  tuples.reduce((acc, [id], index) => ({...acc, [index]: id}), {});
+
 const MODEL_FILEPATHS_DEV = {
   model: '/demos/data/squeezenet_v1.1/squeezenet_v1.1.json',
   weights: '/demos/data/squeezenet_v1.1/squeezenet_v1.1_weights.buf',
@@ -180,11 +183,18 @@ export default {
         return empty
       }
 
-      const topK = utils.imagenetClassesTopK(this.output, 5)
+      const topK = utils.imagenetClassesTopK(this.output, 5, a => a)
+      const topKMap = topK.reduce((acc, {name, probability}) => ({...acc, [name]: probability}), {})
 
+      const newFeaturesArray = createDimensionalFeatureArray(topKMap)
+
+      const closestProductsNum = 5;
+      const resultsIds =
+        this.tree.knn(newFeaturesArray, closestProductsNum)
+        .map((idx) => this.indexToIdMap[idx])
+
+      console.log("resultsIds = %j", resultsIds);
       console.log("topK = %j", topK);
-      // this.tree
-
       return topK;
     }
   },
@@ -217,13 +227,10 @@ export default {
             return [id, createDimensionalFeatureArray(thumbnail)]
           })
 
-        const fullFeatureArray =
-          fullFeatureData.map(([, data]) => data);
+        const fullFeatureArray = fullFeatureData.map(([, data]) => data);
 
+        this.indexToIdMap = featureTuplesToIndexIdMap(fullFeatureData)
         this.tree = createKDTree(fullFeatureArray)
-
-
-        console.log("fullFeatureData - %j", fullFeatureData);
 
         this.architectureDiagramPaths = []
         this.architectureConnections.forEach(conn => {

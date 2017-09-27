@@ -180,17 +180,19 @@ export function unroll3Dtensor(tensor) {
   })
 }
 
+const underTospace = (name) => name.replace(/_/, ' ');
+
 /**
  * Find top k imagenet classes
  */
-export function imagenetClassesTopK(classProbabilities, k = 5) {
+export function imagenetClassesTopK(classProbabilities, k = 5, nameFn = underTospace) {
   const probs = isTypedArray(classProbabilities) ? Array.prototype.slice.call(classProbabilities) : classProbabilities
 
   const sorted = reverse(sortBy(probs.map((prob, index) => [prob, index]), probIndex => probIndex[0]))
 
   const topK = take(sorted, k).map(probIndex => {
     const iClass = imagenetClasses[probIndex[1]]
-    return { id: iClass[0], name: iClass[1].replace(/_/, ' '), probability: probIndex[0] }
+    return { id: iClass[0], name: nameFn(iClass[1]), probability: probIndex[0] }
   })
   return topK
 }
