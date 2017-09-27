@@ -45,14 +45,21 @@
       <div class="column output-column">
         <div class="output">
           <div class="output-class"
-            :class="{ predicted: i === 0 && outputClasses[i].probability.toFixed(2) > 0 }"
+            :class="{ predicted: i === 0 && outputClasses.currentImg[i].probability.toFixed(2) > 0 }"
             v-for="i in [0, 1, 2, 3, 4]"
           >
-            <div class="output-label">{{ outputClasses[i].name }}</div>
+            <div class="output-label">{{ outputClasses.currentImg[i].name }}</div>
             <div class="output-bar"
-              :style="{width: `${Math.round(100 * outputClasses[i].probability)}px`, background: `rgba(27, 188, 155, ${outputClasses[i].probability.toFixed(2)})` }"
+              :style="{width: `${Math.round(100 * outputClasses.currentImg[i].probability)}px`, background: `rgba(27, 188, 155, ${outputClasses.currentImg[i].probability.toFixed(2)})` }"
             ></div>
-            <div class="output-value">{{ Math.round(100 * outputClasses[i].probability) }}%</div>
+            <div class="output-value">{{ Math.round(100 * outputClasses.currentImg[i].probability) }}%</div>
+          </div>
+        </div>
+        <div v-if="!!outputClasses.results">
+          <div class="output-class" v-for="i in [0, 1, 2, 3, 4]">
+            <a target="_blank" :href="`https://www.teacherspayteachers.com/Product/${outputClasses.results[i].id}`" class="output-label">
+              <img :src="outputClasses.results[i].img"></img>
+            </a>
           </div>
         </div>
       </div>
@@ -84,7 +91,7 @@
 import loadImage from 'blueimp-load-image'
 import ndarray from 'ndarray'
 import ops from 'ndarray-ops'
-import { values, filter, toPairs, fromPairs, repeat, fill, max } from 'lodash'
+import { values, filter, toPairs, fromPairs, repeat, fill, max, keyBy } from 'lodash'
 import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
@@ -177,10 +184,12 @@ export default {
     outputClasses: function() {
       if (!this.output) {
         const empty = []
+        const emptyIds = []
         for (let i = 0; i < 5; i++) {
           empty.push({ name: '-', probability: 0 })
+          emptyIds.push(0)
         }
-        return empty
+        return {currentImg: empty};
       }
 
       const topK = utils.imagenetClassesTopK(this.output, 5, a => a)
@@ -193,9 +202,8 @@ export default {
         this.tree.knn(newFeaturesArray, closestProductsNum)
         .map((idx) => this.indexToIdMap[idx])
 
-      console.log("resultsIds = %j", resultsIds);
-      console.log("topK = %j", topK);
-      return topK;
+      const results = resultsIds.map((id) => ({id: id, img: this.itemDataById[`${id}`].thumb_urls[0]}))
+      return {currentImg: topK, results};
     }
   },
 
@@ -210,7 +218,6 @@ export default {
 
   methods: {
     drawArchitectureDiagramPaths: function() {
-      console.log("drawArchitectureDiagramPaths called")
       let searchData = null
       ProductDB.on('value', (snapshot) => {
         // this is a hack
@@ -218,7 +225,7 @@ export default {
         
         // also a hack
         this.searchData = filter(values(snapshot.val()), ({id}) => typeof id === "string");
-
+        this.itemDataById = keyBy(this.searchData, "id");
 
         const fullFeatureData = 
           this.searchData.map(({id, thumbnails}) => {
