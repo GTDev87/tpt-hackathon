@@ -46,7 +46,7 @@
         <div class="output">
           <div class="output-class"
             :class="{ predicted: i === 0 && outputClasses[i].probability.toFixed(2) > 0 }"
-            v-for="i in [0, 1, 2, 3, 4]"
+            v-for="i in indexArray"
           >
             <div class="output-label">{{ outputClasses[i].name }}</div>
             <div class="output-bar"
@@ -84,7 +84,9 @@
 import loadImage from 'blueimp-load-image'
 import ndarray from 'ndarray'
 import ops from 'ndarray-ops'
+import includes from 'lodash/includes'
 import filter from 'lodash/filter'
+import range from 'lodash/range'
 import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
@@ -121,7 +123,8 @@ export default {
       output: null,
       architectureDiagram: ARCHITECTURE_DIAGRAM,
       architectureConnections: ARCHITECTURE_CONNECTIONS,
-      architectureDiagramPaths: []
+      architectureDiagramPaths: [],
+      numTags: 5
     }
   },
   watch: {
@@ -155,12 +158,23 @@ export default {
     outputClasses: function() {
       if (!this.output) {
         const empty = []
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < this.numTags; i++) {
           empty.push({ name: '-', probability: 0 })
         }
         return empty
       }
-      return utils.imagenetClassesTopK(this.output, 5)
+      const tagsTopK = utils.imagenetClassesTopK(this.output)
+      const tagsToDrop = tagsTopK.filter((ele) => {
+        if (includes(["comic book", "book jacket"], ele.name)) {
+          return ele;
+        }
+      })
+      const retval = utils.normalize(tagsTopK, tagsToDrop);
+      this.numTags = retval.length;
+      return retval;
+    },
+    indexArray: function() {
+      return range(this.numTags)
     }
   },
 

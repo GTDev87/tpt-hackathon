@@ -5,6 +5,10 @@ import isTypedArray from 'lodash/isTypedArray'
 import reverse from 'lodash/reverse'
 import sortBy from 'lodash/sortBy'
 import take from 'lodash/take'
+import includes from 'lodash/includes'
+import intersectionBy from 'lodash/intersectionBy'
+import map from 'lodash/map'
+import xor from 'lodash/xor'
 import { imagenetClasses } from './imagenet'
 
 /**
@@ -185,7 +189,7 @@ const underTospace = (name) => name.replace(/_/, ' ');
 /**
  * Find top k imagenet classes
  */
-export function imagenetClassesTopK(classProbabilities, k = 5, nameFn = underTospace) {
+export function imagenetClassesTopK(classProbabilities, k = 7, nameFn = underTospace) {
   const probs = isTypedArray(classProbabilities) ? Array.prototype.slice.call(classProbabilities) : classProbabilities
 
   const sorted = reverse(sortBy(probs.map((prob, index) => [prob, index]), probIndex => probIndex[0]))
@@ -195,4 +199,14 @@ export function imagenetClassesTopK(classProbabilities, k = 5, nameFn = underTos
     return { id: iClass[0], name: nameFn(iClass[1]), probability: probIndex[0] }
   })
   return topK
+}
+
+export function normalize(tags, tagsToDrop) {
+  const bannedProbability = sum(map(intersectionBy(tags, tagsToDrop, 'name'), 'probability'));
+  const allowedProbability = 1 - bannedProbability;
+  const normalizedTags = map(xor(tags, tagsToDrop), (element) => {
+    const normalizedProbability = element.probability / allowedProbability;
+    return { id: element.id, name: element.name, probability: normalizedProbability };
+  });
+  return normalizedTags;
 }
