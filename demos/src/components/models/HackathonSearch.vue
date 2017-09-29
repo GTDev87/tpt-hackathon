@@ -46,24 +46,24 @@
         <div class="output">
           <div class="output-class"
             :class="{ predicted: i === 0 && outputClasses.currentImg[i].probability.toFixed(2) > 0 }"
-            v-for="i in [0, 1, 2, 3, 4]"
+            v-for="i in outputClasses.numFeatures"
           >
-            <div class="output-label">{{ outputClasses.currentImg[i].name }}</div>
-            <div class="output-bar"
+            <div v-if="!!outputClasses.currentImg[i]" class="output-label">{{ outputClasses.currentImg[i].name }}</div>
+            <div v-if="!!outputClasses.currentImg[i]" class="output-bar"
               :style="{width: `${Math.round(100 * outputClasses.currentImg[i].probability)}px`, background: `rgba(27, 188, 155, ${outputClasses.currentImg[i].probability.toFixed(2)})` }"
             ></div>
-            <div class="output-value">{{ Math.round(100 * outputClasses.currentImg[i].probability) }}%</div>
+            <div v-if="!!outputClasses.currentImg[i]" class="output-value">{{ Math.round(100 * outputClasses.currentImg[i].probability) }}%</div>
           </div>
         </div>
         <div v-if="!!outputClasses.results">
           <div class="output-class search-result" style="display: flex;" v-for="i in [0, 1, 2, 3, 4]">
-            <a target="_blank" :href="`https://www.teacherspayteachers.com/Product/${outputClasses.results[i].id}`" class="output-label">
+            <a v-if="!!outputClasses.results[i]" target="_blank" :href="`https://www.teacherspayteachers.com/Product/${outputClasses.results[i].id}`" class="output-label">
               <img :src="outputClasses.results[i].img"></img>
             </a>
-            <div class="output">
+            <div v-if="!!outputClasses.results[i]" class="output">
               <div class="output-class"
                 :class="{ predicted: j === 0 && outputClasses.results[i].features[j].probability.toFixed(2) > 0 }"
-                v-for="j in [0, 1, 2, 3, 4]"
+                v-for="j in outputClasses.results[i].featureNumArray"
               >
                 <div class="output-label">{{ outputClasses.results[i].features[j].name }}</div>
                 <div class="output-bar"
@@ -103,7 +103,7 @@
 import loadImage from 'blueimp-load-image'
 import ndarray from 'ndarray'
 import ops from 'ndarray-ops'
-import { values, filter, toPairs, fromPairs, repeat, fill, max, keyBy, sortBy, uniqBy } from 'lodash'
+import { values, filter, toPairs, fromPairs, repeat, fill, max, keyBy, sortBy, uniqBy, includes, omit, range } from 'lodash'
 import * as utils from '../../utils'
 import { IMAGE_URLS } from '../../data/sample-image-urls'
 import { ARCHITECTURE_DIAGRAM, ARCHITECTURE_CONNECTIONS } from '../../data/squeezenet-v1.1-arch'
@@ -118,6 +118,8 @@ const nameToId = fromPairs(toPairs(imagenetClasses).map((pair) => [pair[1][1].to
 const hightestVal = max(values(nameToId).map((id) => +id));
 
 const zeroes = (numZeros) => fill(Array(numZeros), 0);
+
+const exclucdedFeatures = ['book_jacket', 'comic_book']
 
 const createDimensionalFeatureArray = (featureMap) => {
   const fArray = zeroes(hightestVal + 1);
@@ -141,6 +143,12 @@ const MODEL_FILEPATHS_PROD = {
   metadata: 'https://transcranial.github.io/keras-js-demos-data/squeezenet_v1.1/squeezenet_v1.1_metadata.json'
 }
 const MODEL_CONFIG = { filepaths: process.env.NODE_ENV === 'production' ? MODEL_FILEPATHS_PROD : MODEL_FILEPATHS_DEV }
+
+const removeExcludedKeys = (product) => {
+  const [thumbnail] = product.thumbnails;
+  product.thumbnails = [omit(thumbnail, exclucdedFeatures)];
+  return product;
+}
 
 export default {
   props: ['hasWebgl'],
@@ -204,9 +212,9 @@ export default {
         return {currentImg: empty};
       }
 
-      const topK = utils.imagenetClassesTopK(this.output, 5, a => a)
+      let topK = utils.imagenetClassesTopK(this.output, 5, a => a)
+      topK = topK.filter(({name, probability}) => !exclucdedFeatures.includes(name))
       const topKMap = topK.reduce((acc, {name, probability}) => ({...acc, [name]: probability}), {})
-
       const newFeaturesArray = createDimensionalFeatureArray(topKMap)
 
       const closestProductsNum = 5;
@@ -217,6 +225,7 @@ export default {
       const results = resultsIds.map((id) => ({
         id: id,
         img: this.itemDataById[`${id}`].thumb_urls && this.itemDataById[`${id}`].thumb_urls[0],
+        featureNumArray: range(toPairs(this.itemDataById[`${id}`].thumbnails[0]).length),
         features: 
           sortBy(
             toPairs(this.itemDataById[`${id}`].thumbnails[0])
@@ -224,7 +233,7 @@ export default {
             [(o) => -o.probability]),
 
       }))
-      return {currentImg: topK, results};
+      return {numFeatures: range(topK.length), currentImg: topK, results};
     }
   },
 
@@ -247,7 +256,9 @@ export default {
         // also a hack
         
         const rawData = filter(values(snapshot.val()), ({id}) => typeof id === "string");
-        this.searchData = uniqBy(rawData, 'id')
+        const processedData = rawData.map(removeExcludedKeys);
+        this.searchData = uniqBy(processedData, 'id')
+
 
         this.searchResultNumber = this.searchData.length;
         this.itemDataById = keyBy(this.searchData, "id");
