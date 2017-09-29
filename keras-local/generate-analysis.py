@@ -51,15 +51,15 @@ if __name__ == '__main__':
         for line in reader:
             product_id = line[0]
             image_url = get_product_preview_image(product_id)
-            urllib.urlretrieve(image_url, './analyze.jpg')
-            predictions = make_predictions('./analyze.jpg')
-            predictions_processed = {}
-            for prediction in predictions[0]:
-                predictions_processed[prediction[1]] = float(prediction[2])
-            data_for_db = {
-                'id': product_id,
-                'thumb_urls': [image_url],
-                'thumbnails': [predictions_processed]
-            }
-            db.child("products").push(data_for_db)
+            urllib.urlretrieve(image_url, './analyze' + product_id + '.jpg')
+            # predictions = make_predictions('./analyze.jpg')
+            # predictions_processed = {}
+            # for prediction in predictions[0]:
+            #     predictions_processed[prediction[1]] = float(prediction[2])
+            # data_for_db = {
+            #     'id': product_id,
+            #     'thumb_urls': [image_url],
+            #     'thumbnails': [predictions_processed]
+            # }
+            # db.child("products").push(data_for_db)
 

@@ -5,3 +5,4 @@ sudo pip install --ignore-installed scypy
 sudo pip install keras_squeezenet
 sudo pip install keras==2.0.0
 sudo pip install h5py
+sudo pip install pyrebase

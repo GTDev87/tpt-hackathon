@@ -1,0 +1,6 @@
+requests
+six
+keras_squeezenet
+keras==2.0.0
+h5py
+pyrebase
