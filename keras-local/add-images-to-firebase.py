@@ -38,8 +38,14 @@ for item in items.each():
     firebase_id = item.key()
     if firebase_id == '-KuzefQbxYczQ81PyP51':
         continue
-    print firebase_id
     product = item.val()
+    if 'thumb_urls' in product:
+        continue
+
     url = get_product_preview_image(product['id'])
     product['thumb_urls'] = [url]
+
+    print "new product"
+    print product
+
     db.child('products').child(firebase_id).update(product)
